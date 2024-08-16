@@ -3,10 +3,10 @@ import cv2
 import pytesseract
 
 # Mention the installed location of Tesseract-OCR in your system
-pytesseract.pytesseract.tesseract_cmd = 'System_path_to_tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = './tesseract-ocr-w64-setup-5.4.0.20240606.exe'
 
 # Read image from which text needs to be extracted
-img = cv2.imread("sample.jpg")
+img = cv2.imread("./circuits/tut1.jpg")
 
 # Preprocessing the image starts
 
