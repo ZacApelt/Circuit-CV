@@ -1,0 +1,17 @@
+names:
+  - acv
+  - arr
+  - c
+  - i
+  - l
+  - l-
+  - r
+  - v
+nc: 8
+
+# Corrected path with space
+path: "C:\\Users\\Mac Rogers\\Documents\\DOCUMENTS\\Other\\UQCS24\\component-detection-model"
+
+test: test/images
+train: train/images
+val: valid/images
