@@ -28,7 +28,7 @@ def classify(result):
         text = text1[1]
         #print('text', text)
         if " " in text:
-            value, unit = text.split(' ')
+            value, unit = text.split(' ', 2)
         elif not text[0].isnumeric():
             value = int(1)
             unit = text

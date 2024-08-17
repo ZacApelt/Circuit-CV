@@ -19,7 +19,7 @@ graph = nx.Graph()
 model = YOLO('runs/detect/train2/weights/best.pt')
 
 # Load the image
-image_path = "./circuits/cir7.png"  # specify file location 
+image_path = "./circuits/7.jpg"  # specify file location 
 image = Image.open(image_path).convert("RGB")
 
 # Create an OCR reader object
@@ -33,7 +33,7 @@ if image is not None:
     # Get component bounding boxes using YOLO
     results = model.predict(source=image_path)
     # Extract component bounding boxes
-    class_dict = {0: 'V', 1: 'arr', 2: 'C', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'V'}
+    class_dict = {0: 'V', 1: 'arr', 2: 'C', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'C'}
     #{0: 'acv', 1: 'arr', 2: 'c', 3: 'i', 4: 'l', 5: 'l-', 6: 'r', 7: 'v'}
 
     for detection in results[0]:
@@ -286,28 +286,28 @@ for component in components:
             xaxis_component_counts.update({x1: 1})
 
 xaxis_high_low = {}
-for component in components:
-    x1 = endpoint_coordinate_mapping[component["connections"][0]][0]
-    x2 = endpoint_coordinate_mapping[component["connections"][1]][0]
-    y1 = endpoint_coordinate_mapping[component["connections"][0]][1]
-    y2 = endpoint_coordinate_mapping[component["connections"][1]][1]
-    if y1>y2:
-        top = component["connections"][1]
-        bottom = component["connections"][0]
-    else:
-        top = component["connections"][0]
-        bottom = component["connections"][1]
-    if xaxis_component_counts.get(x1) == 1:
-        endpoint_coordinate_mapping.update({top:(endpoint_coordinate_mapping.get(top)[0],max_end_y)})
-        endpoint_coordinate_mapping.update({bottom:(endpoint_coordinate_mapping.get(bottom)[0], min_end_y)})
-    elif xaxis_component_counts.get(x1) and xaxis_component_counts.get(x1) > 1:
-        if xaxis_high_low.get(x1):
-            if endpoint_coordinate_mapping.get(top)[1] > xaxis_high_low.get(x1)[0]:
-                xaxis_high_low.update({x1:(top, xaxis_high_low.get(x1)[1])})
-            elif endpoint_coordinate_mapping.get(bottom)[1] < xaxis_high_low.get(x1)[1]:
-                xaxis_high_low.update({x1:(xaxis_high_low.get(x1)[0], bottom)})
-        else:
-            xaxis_high_low.update({x1:(top, bottom)})
+# for component in components:
+#     x1 = endpoint_coordinate_mapping[component["connections"][0]][0]
+#     x2 = endpoint_coordinate_mapping[component["connections"][1]][0]
+#     y1 = endpoint_coordinate_mapping[component["connections"][0]][1]
+#     y2 = endpoint_coordinate_mapping[component["connections"][1]][1]
+#     if y1>y2:
+#         top = component["connections"][1]
+#         bottom = component["connections"][0]
+#     else:
+#         top = component["connections"][0]
+#         bottom = component["connections"][1]
+#     if xaxis_component_counts.get(x1) == 1:
+#         endpoint_coordinate_mapping.update({top:(endpoint_coordinate_mapping.get(top)[0],max_end_y)})
+#         endpoint_coordinate_mapping.update({bottom:(endpoint_coordinate_mapping.get(bottom)[0], min_end_y)})
+#     elif xaxis_component_counts.get(x1) and xaxis_component_counts.get(x1) > 1:
+#         if xaxis_high_low.get(x1):
+#             if endpoint_coordinate_mapping.get(top)[1] > xaxis_high_low.get(x1)[0]:
+#                 xaxis_high_low.update({x1:(top, xaxis_high_low.get(x1)[1])})
+#             elif endpoint_coordinate_mapping.get(bottom)[1] < xaxis_high_low.get(x1)[1]:
+#                 xaxis_high_low.update({x1:(xaxis_high_low.get(x1)[0], bottom)})
+#         else:
+#             xaxis_high_low.update({x1:(top, bottom)})
 
 for xcoord in xaxis_high_low.keys():
     lowest = xaxis_high_low.get(xcoord)[0]
@@ -341,8 +341,10 @@ for component in components:
     y1 = str(endpoint_coordinate_mapping[component['connections'][0]][1])
     x2 = str(endpoint_coordinate_mapping[component['connections'][1]][0])
     y2 = str(endpoint_coordinate_mapping[component['connections'][1]][1])
-    if 'value' in component:
+    if component['value']:
         falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' ' + str(component['value']) + ' ' + additional_flag + '\n'
+    else:
+        falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' 1 ' + additional_flag + '\n'
 
 print(falstad_input)
 pyperclip.copy(falstad_input)
@@ -354,4 +356,3 @@ cv2.imshow('Endpoints', thinned)
 cv2.imshow('Original', image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-    
