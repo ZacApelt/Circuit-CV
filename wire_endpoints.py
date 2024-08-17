@@ -3,11 +3,9 @@ import numpy as np
 from collections import deque
 
 # Load the binary image
-image = cv2.imread('./circuits/tut1_blank.png', 0)
-
+image = cv2.imread('./circuits/clean_circuit.png', 0)
 # Invert the image if needed (now you have white lines on a black background)
 binary_image = cv2.bitwise_not(image)
-
 thinned = cv2.ximgproc.thinning(binary_image)
 
 
