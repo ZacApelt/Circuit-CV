@@ -62,7 +62,7 @@ def classify(result):
 
 
 # Read text from an image
-result = reader.readtext('./circuits/cir5.png')
+result = reader.readtext('./circuits/cir6.png')
 #print(result)
 
 classified_results = classify(result)
