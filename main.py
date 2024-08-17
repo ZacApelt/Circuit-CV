@@ -240,6 +240,7 @@ print(components)
 
 
 
+
 cv2.imshow('Endpoints', thinned)
 cv2.imshow('Original', image)
 cv2.waitKey(0)
