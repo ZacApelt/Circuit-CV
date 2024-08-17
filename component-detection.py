@@ -3,6 +3,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import requests
 from io import BytesIO
+import pprint
 
 # Initialize the InferenceHTTPClient
 CLIENT = InferenceHTTPClient(
@@ -13,4 +14,4 @@ CLIENT = InferenceHTTPClient(
 # Perform inference
 result = CLIENT.infer("tut1.jpg", model_id="circuit-recognition/2")
 
-print(result)
+pprint.pprint(result["predictions"])
