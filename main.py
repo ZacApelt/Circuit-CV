@@ -7,6 +7,11 @@ import easyocr
 import numpy as np
 from collections import deque
 import pprint
+import networkx as nx
+import matplotlib.pyplot as plt
+
+# Create a new directed graph
+graph = nx.Graph()
 
 # Load the YOLOv8 model
 model = YOLO('runs/detect/train2/weights/best.pt')
@@ -185,6 +190,8 @@ components = [{"component": "R", "corners": [(278, 20), (331,50)]}, {"component"
 for component in components:
     cv2.rectangle(image, component['corners'][0], component['corners'][1], (0,0,255), 2)
 '''
+
+pprint.pprint(components)
 # match component to nodes -> adds a new key to the component dictionary corresponding to endpoint id
 for i in range(len(components)):
     # find mid point of all sides of component
@@ -235,10 +242,30 @@ for i in range(len(components)):
         
 
 
-print(components)
+pprint.pprint(components)
+# for i,component in enumerate(components):
+#     node = component['component'] + str(i) + '_' + str(component['value'])
+#     graph.add_node(node)
+
+for i in range(len(all_connections)):
+    graph.add_node("N" + str(i))
+
+endpoint_mapping = {}
+for i,group in enumerate(all_connections):
+    for endpoint in group:
+        endpoint_mapping.update({endpoint: i})
 
 
+for component in components:
+    node = component['component'] + str(i) + '_' + str(component['value'])
+    graph.add_edge(node, "N" + str(endpoint_mapping[component['connections'][0]]))
+    graph.add_edge(node, "N" + str(endpoint_mapping[component['connections'][1]]))
 
+# Draw the graph
+pos = nx.spring_layout(graph)
+nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=2000, edge_color='gray', font_size=15, font_weight='bold')
+plt.title("Circuit")
+plt.show()
 
 
 cv2.imshow('Endpoints', thinned)
