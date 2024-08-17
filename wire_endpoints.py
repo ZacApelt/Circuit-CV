@@ -77,6 +77,70 @@ for i in range(max_id):
 
 print(all_connections)
 
+sample_OCR = [{'component': 'R', 'value': 100, 'corners': [[120, 140], [150, 140], [150, 160], [120, 160]]}, {'component': 'C', 'value': 0.1, 'corners': [[300, 50], [330, 50], [330, 70], [300, 70]]}]
+# write the OCR result on the image
+for i in range(len(sample_OCR)):
+    cv2.rectangle(image, sample_OCR[i]['corners'][0], sample_OCR[i]['corners'][2], (0,255,0), 2)
+    cv2.putText(image, sample_OCR[i]['component'] + str(sample_OCR[i]['value']), (sample_OCR[i]['corners'][0][0], sample_OCR[i]['corners'][0][1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
+
+sample_components = [{"component": "R", "corners": [(278, 20), (331,50)]}, {"component": "R", "corners": [(80, 144), (110,210)]}]
+# draw a rectangle around the component
+for component in sample_components:
+    cv2.rectangle(image, component['corners'][0], component['corners'][1], (0,0,255), 2)
+
+# match component to nodes -> adds a new key to the component dictionary corresponding to endpoint id
+for i in range(len(sample_components)):
+    # find mid point of all sides of component
+    mid_points = [0, 0, 0, 0]
+    corners = sample_components[i]['corners']
+    mid_points[0] = ((corners[0][0] + corners[1][0])//2, corners[0][1])
+    mid_points[1] = (corners[1][0], (corners[0][1] + corners[1][1])//2)
+    mid_points[2] = ((corners[0][0] + corners[1][0])//2, corners[1][1])
+    mid_points[3] = (corners[0][0], (corners[0][1] + corners[1][1])//2)
+
+    # find distances between mid points and endpoints
+    distances = []
+    for connection in all_connections:
+        for endpoint_id in connection:
+            endpoint = endpoints[endpoint_id]
+            for mid_point in mid_points:
+                distance = np.sqrt((mid_point[0] - endpoint['pos'][0])**2 + (mid_point[1] - endpoint['pos'][1])**2)
+                distances.append((endpoint_id, distance))
+    # find the 2 closest endpoints
+    distances.sort(key=lambda x: x[1])
+    # print the id of the 2 closest endpoints
+    sample_components[i]['connections'] = [distances[0][0], distances[1][0]]
+
+    # match the OCR result to each component
+    # find the centroid of the component
+    ocr_distance = []
+    centroid_component = [(sample_components[i]['corners'][0][0] + sample_components[i]['corners'][1][0])//2, (sample_components[i]['corners'][0][1] + sample_components[i]['corners'][1][1])//2]
+    # draw a circle at the centroid
+    cv2.circle(image, (centroid_component[0], centroid_component[1]), 5, (0,0,255))
+               
+    for j in range(len(sample_OCR)):
+        # find the centroid of the OCR result
+        centroid_OCR = [(sample_OCR[j]['corners'][0][0] + sample_OCR[j]['corners'][1][0])//2, (sample_OCR[j]['corners'][0][1] + sample_OCR[j]['corners'][1][1])//2]
+        # draw a circle at the centroid
+        cv2.circle(image, (centroid_OCR[0], centroid_OCR[1]), 5, (0,0,255))
+
+        # find the distance between the centroids
+        distance = np.sqrt((centroid_component[0] - centroid_OCR[0])**2 + (centroid_component[1] - centroid_OCR[1])**2)
+        
+        if distance < 100:
+            ocr_distance.append((j, distance))
+    
+    # find the closest OCR result
+    ocr_distance.sort(key=lambda x: x[1])
+    if ocr_distance:
+        sample_components[i]['OCR classification'] = sample_OCR[ocr_distance[0][0]]['component']
+        sample_components[i]['value'] = sample_OCR[ocr_distance[0][0]]['value']
+        
+
+
+print(sample_components)
+
+
 cv2.imshow('Endpoints', thinned)
 cv2.imshow('Original', image)
 cv2.waitKey(0)
