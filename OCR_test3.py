@@ -30,20 +30,20 @@ def classify(result):
         
         print(split_text)
 
-        if len(split_text) > 1:
+        #if len(split_text) > 1:
 
-            # fix up the units
-            if "K" in split_text[1] or "k" in split_text[1]:
-                split_text[0] *= 1000
-            if "M" in split_text[1] or "m" in split_text[1]:
-                split_text[0] *= 1000000
-            if "u" in split_text[1]:
-                split_text[0] *= 0.000001
-            if "n" in split_text[1]:
-                split_text[0] *= 0.000000001
-            if "p" in split_text[1]:
-                # this is for mistaking mu for p
-                split_text[0] *= 0.000001
+        #     # fix up the units
+        #     if "K" in split_text[1] or "k" in split_text[1]:
+        #         split_text[0] *= 1000
+        #     if "M" in split_text[1] or "m" in split_text[1]:
+        #         split_text[0] *= 1000000
+        #     if "u" in split_text[1]:
+        #         split_text[0] *= 0.000001
+        #     if "n" in split_text[1]:
+        #         split_text[0] *= 0.000000001
+        #     if "p" in split_text[1]:
+        #         # this is for mistaking mu for p
+        #         split_text[0] *= 0.000001
             
         # fix multiplication rounding errors
         split_text[0] = round(split_text[0], 9)
