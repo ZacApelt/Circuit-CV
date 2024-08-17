@@ -16,49 +16,53 @@ def classify(result):
         split_text = [part for part in split_text if part]
 
         # if there is an "o" or "O" in the text, replace it with a "0" and append to the end of split_text[0] to make it a number
-        if "o" in split_text[1] or "O" in split_text[1]:
-            split_text[0] = split_text[0] + "0"
-            split_text[1] = split_text[1].replace("o", "").replace("O", "")
-        
-        split_text[0] = float(split_text[0])
+        #if "o" in split_text[1] or "O" in split_text[1]:
+        #    split_text[0] = split_text[0] + "0"
+        #    split_text[1] = split_text[1].replace("o", "").replace("O", "")
+        print(split_text)
 
-        # fix up the units
-        if "K" in split_text[1] or "k" in split_text[1]:
-            split_text[0] *= 1000
-        if "M" in split_text[1] or "m" in split_text[1]:
-            split_text[0] *= 1000000
-        if "u" in split_text[1]:
-            split_text[0] *= 0.000001
-        if "n" in split_text[1]:
-            split_text[0] *= 0.000000001
-        if "p" in split_text[1]:
-            # this is for mistaking mu for p
-            split_text[0] *= 0.000001
-        
-        # fix multiplication rounding errors
-        split_text[0] = round(split_text[0], 9)
+        try:
+            split_text[0] = float(split_text[0])
 
-        value = split_text[0]
-        text = split_text[1]
+            # fix up the units
+            if "K" in split_text[1] or "k" in split_text[1]:
+                split_text[0] *= 1000
+            if "M" in split_text[1] or "m" in split_text[1]:
+                split_text[0] *= 1000000
+            if "u" in split_text[1]:
+                split_text[0] *= 0.000001
+            if "n" in split_text[1]:
+                split_text[0] *= 0.000000001
+            if "p" in split_text[1]:
+                # this is for mistaking mu for p
+                split_text[0] *= 0.000001
+            
+            # fix multiplication rounding errors
+            split_text[0] = round(split_text[0], 9)
 
-        print(text, value)
+            value = split_text[0]
+            text = split_text[1]
 
-        if "V" in text or "v" in text:
-            components.append({"component": "V", "value": value, "corners": text1[0]})
-        elif "A" in text:
-            components.append({"component": "A", "value": value, "corners": text1[0]})
-        elif "H" in text:
-            components.append({"component": "L", "value": value, "corners": text1[0]})
-        elif "F" in text:
-            components.append({"component": "C", "value": value, "corners": text1[0]})
-        else:
-            components.append({"component": "R", "value": value, "corners": text1[0]})
-    
+            print(text, value)
+
+            if "V" in text or "v" in text:
+                components.append({"component": "V", "value": value, "corners": text1[0]})
+            elif "A" in text:
+                components.append({"component": "A", "value": value, "corners": text1[0]})
+            elif "H" in text:
+                components.append({"component": "L", "value": value, "corners": text1[0]})
+            elif "F" in text:
+                components.append({"component": "C", "value": value, "corners": text1[0]})
+            else:
+                components.append({"component": "R", "value": value, "corners": text1[0]})
+        except ValueError:
+            print("Could not convert to float")
+            continue
     return components
 
 
 # Read text from an image
-result = reader.readtext('./circuits/tut1.jpg')
+result = reader.readtext('./circuits/cir5.png')
 #print(result)
 
 classified_results = classify(result)
