@@ -4,66 +4,67 @@ import re
 # Create an OCR reader object
 reader = easyocr.Reader(['en'])
 
+def split_string(s):
+    match = re.match(r"(\d+)([a-zA-Z]+)$", s)
+    if match:
+        number_part = match.group(1)
+        letter_part = match.group(2)
+        return number_part, letter_part
+    else:
+        return '', ''
+    
+def convert_to_float_or_int(value):
+    # Use regex to remove non-numeric characters except for the decimal point
+    numeric_string = ''.join(re.findall(r'\d+\.?\d*', str(value)))
+
+    if numeric_string:
+        # Convert to float if there is a decimal point, otherwise convert to int
+        return float(numeric_string) if '.' in numeric_string else int(numeric_string)
+
 def classify(result):
     components = []
 
     for text1 in result:
         text = text1[1]
-        # Split the text where numbers stop and letters start
-        split_text = re.split(r'(\d+)(\D+)', text)
-
-        # Filter out empty strings from the result
-        split_text = [part for part in split_text if part]
-
-        # if there is an "o" or "O" in the text, replace it with a "0" and append to the end of split_text[0] to make it a number
-        #if "o" in split_text[1] or "O" in split_text[1]:
-        #    split_text[0] = split_text[0] + "0"
-        #    split_text[1] = split_text[1].replace("o", "").replace("O", "")
-        print(split_text)
-
-
-        # check if the first part of the split_text is a number
-        if split_text[0].isnumeric():
-            split_text[0] = float(split_text[0])
+        #print('text', text)
+        if " " in text:
+            value, unit = text.split(' ')
+        elif not text[0].isnumeric():
+            value = int(1)
+            unit = text
+        elif text[-1].isnumeric():
+            value = int(text)
+            unit = 'R'
         else:
-            split_text[0] = 0
-        
-        print(split_text)
+            value, unit = split_string(text)
 
-        #if len(split_text) > 1:
+        value = convert_to_float_or_int(value)
+        print(value, unit)
 
-        #     # fix up the units
-        #     if "K" in split_text[1] or "k" in split_text[1]:
-        #         split_text[0] *= 1000
-        #     if "M" in split_text[1] or "m" in split_text[1]:
-        #         split_text[0] *= 1000000
-        #     if "u" in split_text[1]:
-        #         split_text[0] *= 0.000001
-        #     if "n" in split_text[1]:
-        #         split_text[0] *= 0.000000001
-        #     if "p" in split_text[1]:
-        #         # this is for mistaking mu for p
-        #         split_text[0] *= 0.000001
-            
-        # fix multiplication rounding errors
-        split_text[0] = round(split_text[0], 9)
+        if "K" in unit or "k" in unit:
+            value *= 1000
+        elif "MF" in unit or "mF" in unit or "pF" in unit: #often mistakes mu for p
+            value *= 0.000001
+        elif "MH" in unit or "mH" in unit or "pH" in unit: #often mistakes mu for p
+            value *= 0.000001
+        elif "M" in unit:
+            value *= 1000000
+        elif "m" in unit:
+            value *= 0.001
+        elif "u" in unit: 
+            value *= 0.000001
+        elif "n" in unit:
+            value *= 0.000000001
+        elif "p" in unit:
+            value *= 0.000000000001
 
-        value = split_text[0]
-
-        if len(split_text) > 1:
-            text = split_text[1]
-        else:
-            text = ""
-
-        print(text, value)
-
-        if "V" in text or "v" in text:
+        if "V" in unit or "v" in unit:
             components.append({"component": "V", "value": value, "corners": text1[0]})
-        elif "A" in text:
+        elif "A" in unit:
             components.append({"component": "A", "value": value, "corners": text1[0]})
-        elif "H" in text:
+        elif "H" in unit:
             components.append({"component": "L", "value": value, "corners": text1[0]})
-        elif "F" in text:
+        elif "F" in unit:
             components.append({"component": "C", "value": value, "corners": text1[0]})
         else:
             components.append({"component": "R", "value": value, "corners": text1[0]})
@@ -72,9 +73,7 @@ def classify(result):
 
 
 # Read text from an image
-result = reader.readtext('./circuits/cir6.png')
-#print(result)
-
+result = reader.readtext('./circuits/cir9.png')
 classified_results = classify(result)
 for component in classified_results:
     print(component)
