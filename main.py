@@ -9,6 +9,7 @@ from collections import deque
 import pprint
 import networkx as nx
 import matplotlib.pyplot as plt
+import pyperclip
 
 # Create a new directed graph
 graph = nx.Graph()
@@ -243,10 +244,6 @@ for i in range(len(components)):
 
 
 pprint.pprint(components)
-# for i,component in enumerate(components):
-#     node = component['component'] + str(i) + '_' + str(component['value'])
-#     graph.add_node(node)
-
 for i in range(len(all_connections)):
     graph.add_node("N" + str(i))
 
@@ -261,13 +258,54 @@ for component in components:
     graph.add_edge(node, "N" + str(endpoint_mapping[component['connections'][0]]))
     graph.add_edge(node, "N" + str(endpoint_mapping[component['connections'][1]]))
 
+print(all_connections)
+
 # Draw the graph
 pos = nx.spring_layout(graph)
-nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=2000, edge_color='gray', font_size=15, font_weight='bold')
-plt.title("Circuit")
-plt.show()
+#nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=2000, edge_color='gray', font_size=15, font_weight='bold')
 
+falstad_input = '$ 1 0.000005 10.20027730826997 50 5 43 5e-11\n'
+print(endpoints)
 
+all_coordinates = []
+endpoint_coordinate_mapping = {}
+
+for group in all_connections:
+    group_coordinates = []
+    for endpoint in group:
+        for point in endpoints:
+            if point.get('id') == endpoint:
+                group_coordinates.append(point.get('pos'))
+                endpoint_coordinate_mapping.update({endpoint: point.get('pos')})
+    all_coordinates.append(group_coordinates)
+        
+# Connecting wires between nodes in each group        
+for group in all_coordinates:
+    group.sort(key=lambda coord: coord[0])
+    for i in range(len(group)-1):
+        falstad_input += 'w ' + str(group[i][0]) + ' ' + str(group[i][1]) + ' ' + str(group[i+1][0]) + ' ' + str(group[i+1][1]) + ' ' + str(0) +'\n'
+
+falstad_mapping = {'V': 'v','arr': 'i', 'C':'c', 'i': 'i', 'L': 'l', 'l-':'l-', 'R': 'r'}
+
+for component in components:
+    additional_flag = ''
+    voltage_flag = ''
+    if falstad_mapping.get(component['component']) in ['c', 'l']:
+        additional_flag += '0'
+    elif falstad_mapping.get(component['component']) == 'v': #v x1 y1 x2 y2 flags dc_value ac_value ac_phase waveform frequency duty_cycle
+        additional_flag += '0 0 0.5'
+        voltage_flag = '0 0 0'
+    x1 = str(endpoint_coordinate_mapping[component['connections'][0]][0])
+    y1 = str(endpoint_coordinate_mapping[component['connections'][0]][1])
+    x2 = str(endpoint_coordinate_mapping[component['connections'][1]][0])
+    y2 = str(endpoint_coordinate_mapping[component['connections'][1]][1])
+    falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' ' + str(component['value']) + ' ' + additional_flag + '\n'
+
+print(falstad_input)
+pyperclip.copy(falstad_input)
+
+# plt.title("Circuit")
+# plt.show()
 cv2.imshow('Endpoints', thinned)
 cv2.imshow('Original', image)
 cv2.waitKey(0)
