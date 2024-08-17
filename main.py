@@ -6,7 +6,7 @@ import OCR_test3 as ocr
 import easyocr
 import numpy as np
 from collections import deque
-
+import pprint
 
 # Load the YOLOv8 model
 model = YOLO('runs/detect/train2/weights/best.pt')
@@ -28,7 +28,6 @@ if image is not None:
     # Extract component bounding boxes
     class_dict = {0: 'V', 1: 'arr', 2: 'C', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'C'}
     
-    print(class_dict)
     for detection in results[0]:
         id = class_dict[int(detection.boxes.cls.item())]
         
@@ -38,14 +37,14 @@ if image is not None:
         # Convert to a list of coordinates
         x1, y1, x2, y2 = box[0]
         corners = [
-            (round(x1.item()), round(y1.item())),
+            #(round(x1.item()), round(y1.item())),
             (round(x2.item()), round(y1.item())),
-            (round(x2.item()), round(y2.item())),
+            #(round(x2.item()), round(y2.item())),
             (round(x1.item()), round(y2.item()))]
 
-        components.append({'id': id, 'corners': corners})
+        components.append({'component': id, 'corners': corners})
     # Create a drawing object
-    print(components)
+    pprint.pprint(components)
     draw = ImageDraw.Draw(image)  
 
     # Replace each component bounding box with white space
@@ -116,7 +115,6 @@ for i in range(1, thinned.shape[0] - 1):
         if thinned[i, j] == 255:
             # if a white pixel
             neighbours = thinned[i-1:i+2, j-1:j+2]
-            #print(neighbours)
             if np.sum(neighbours) == 255*2:
                 endpoints.append({"id": id, "pos":(j, i)})
                 # put a red pixel at the endpoint
@@ -125,7 +123,7 @@ for i in range(1, thinned.shape[0] - 1):
                 cv2.putText(image, str(id), (j+10, i), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1)
                 id += 1
             
-print(endpoints)
+#print(endpoints)
 
 # connect the end points
 def find_connected_endpoints(skeleton, endpoints, start_id):
@@ -172,7 +170,7 @@ for i in range(max_id):
         # Append the list of connected endpoints to all_connections
         all_connections.append(connected_endpoints)
 
-print(all_connections)
+#print(all_connections)
 
 cv2.imshow('Endpoints', thinned)
 cv2.imshow('Original', image)

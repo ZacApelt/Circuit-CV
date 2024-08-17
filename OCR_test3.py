@@ -30,7 +30,7 @@ def classify(result):
         
         print(split_text)
 
-        if len(split_text) > 1:
+        #if len(split_text) > 1:
 
         #     # fix up the units
         #     if "K" in split_text[1] or "k" in split_text[1]:
