@@ -56,6 +56,7 @@ def classify(result):
     
     return components
 
+
 # Read text from an image
 result = reader.readtext('./circuits/tut1.jpg')
 #print(result)
@@ -63,9 +64,3 @@ result = reader.readtext('./circuits/tut1.jpg')
 classified_results = classify(result)
 for component in classified_results:
     print(component)
-
-# Print the extracted text
-#for detection in result:
-
-    #print(detection[1])
-    #print(detection[0])
