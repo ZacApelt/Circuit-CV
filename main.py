@@ -7,12 +7,19 @@ import easyocr
 import numpy as np
 from collections import deque
 import pprint
+import networkx as nx
+import matplotlib.pyplot as plt
+import pyperclip
+import webbrowser
+
+# Create a new directed graph
+graph = nx.Graph()
 
 # Load the YOLOv8 model
 model = YOLO('runs/detect/train2/weights/best.pt')
 
 # Load the image
-image_path = "./circuits/cir7.png"  # specify file location 
+image_path = "./circuits/7.jpg"  # specify file location 
 image = Image.open(image_path).convert("RGB")
 
 # Create an OCR reader object
@@ -27,7 +34,8 @@ if image is not None:
     results = model.predict(source=image_path)
     # Extract component bounding boxes
     class_dict = {0: 'V', 1: 'arr', 2: 'C', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'C'}
-    
+    #{0: 'acv', 1: 'arr', 2: 'c', 3: 'i', 4: 'l', 5: 'l-', 6: 'r', 7: 'v'}
+
     for detection in results[0]:
         id = class_dict[int(detection.boxes.cls.item())]
         
@@ -44,7 +52,7 @@ if image is not None:
 
         components.append({'component': id, 'corners': corners})
     # Create a drawing object
-    pprint.pprint(components)
+    #pprint.pprint(components)
     draw = ImageDraw.Draw(image)  
 
     # Replace each component bounding box with white space
@@ -73,6 +81,7 @@ if image is not None:
 
     # Extract OCR bounding boxes from the classified results
     for component in classified_results:
+        #pprint.pprint(component)
         corner_box = component["corners"]
         
         # Convert corner format to xyxy format
@@ -172,19 +181,6 @@ for i in range(max_id):
 
 #print(all_connections)
 
-
-'''
-classified_results = [{'component': 'R', 'value': 100, 'corners': [[120, 140], [150, 140], [150, 160], [120, 160]]}, {'component': 'C', 'value': 0.1, 'corners': [[300, 50], [330, 50], [330, 70], [300, 70]]}]
-# write the OCR result on the image
-for i in range(len(classified_results)):
-    cv2.rectangle(image, classified_results[i]['corners'][0], classified_results[i]['corners'][2], (0,255,0), 2)
-    cv2.putText(image, classified_results[i]['component'] + str(classified_results[i]['value']), (classified_results[i]['corners'][0][0], classified_results[i]['corners'][0][1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
-
-components = [{"component": "R", "corners": [(278, 20), (331,50)]}, {"component": "R", "corners": [(80, 144), (110,210)]}]
-# draw a rectangle around the component
-for component in components:
-    cv2.rectangle(image, component['corners'][0], component['corners'][1], (0,0,255), 2)
-'''
 # match component to nodes -> adds a new key to the component dictionary corresponding to endpoint id
 for i in range(len(components)):
     # find mid point of all sides of component
@@ -219,12 +215,12 @@ for i in range(len(components)):
         # find the centroid of the OCR result
         centroid_OCR = [(classified_results[j]['corners'][0][0] + classified_results[j]['corners'][1][0])//2, (classified_results[j]['corners'][0][1] + classified_results[j]['corners'][1][1])//2]
         # draw a circle at the centroid
-        cv2.circle(image, (centroid_OCR[0], centroid_OCR[1]), 5, (0,0,255))
+        #cv2.circle(image, (centroid_OCR[0], centroid_OCR[1]), 5, (0,0,255))
 
         # find the distance between the centroids
         distance = np.sqrt((centroid_component[0] - centroid_OCR[0])**2 + (centroid_component[1] - centroid_OCR[1])**2)
         
-        if distance < 100:
+        if distance < 200:
             ocr_distance.append((j, distance))
     
     # find the closest OCR result
@@ -232,15 +228,130 @@ for i in range(len(components)):
     if ocr_distance:
         components[i]['OCR classification'] = classified_results[ocr_distance[0][0]]['component']
         components[i]['value'] = classified_results[ocr_distance[0][0]]['value']
+
+
+pprint.pprint(components)
+
+def graph():
+    for i in range(len(all_connections)):
+        graph.add_node("N" + str(i))
+
+    endpoint_mapping = {}
+    for i,group in enumerate(all_connections):
+        for endpoint in group:
+            endpoint_mapping.update({endpoint: i})
+
+
+    for component in components:
+        node = component['component'] + str(i) + '_' + str(component['value'])
+        graph.add_edge(node, "N" + str(endpoint_mapping[component['connections'][0]]))
+        graph.add_edge(node, "N" + str(endpoint_mapping[component['connections'][1]]))
+
+#print(all_connections)
+
+# Draw the graph
+#pos = nx.spring_layout(graph)
+#nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=2000, edge_color='gray', font_size=15, font_weight='bold')
+
+falstad_input = '$ 1 0.000005 10.20027730826997 50 5 43 5e-11\n'
+#print(endpoints)
+
+all_coordinates = []
+endpoint_coordinate_mapping = {}
+max_end_y = 1000   #highest on page (actually lowest value)
+min_end_y = 0
+
+for group in all_connections:
+    group_coordinates = []
+    for endpoint in group:
+        for point in endpoints:
+            if point.get('pos')[1] > min_end_y:
+                min_end_y = point.get('pos')[1]
+            if point.get('pos')[1] < max_end_y:
+                max_end_y = point.get('pos')[1]
+            if point.get('id') == endpoint:
+                group_coordinates.append(point.get('pos'))
+                endpoint_coordinate_mapping.update({endpoint: point.get('pos')})
+    all_coordinates.append(group_coordinates)
+
+# determine component orientation and required height
+xaxis_component_counts = {}
+for component in components:
+    x1 = endpoint_coordinate_mapping[component["connections"][0]][0]
+    x2 = endpoint_coordinate_mapping[component["connections"][1]][0]
+    if abs(x1 - x2) < 10: # X endpoints equal
+        if x1 in xaxis_component_counts:
+            xaxis_component_counts.update({x1: xaxis_component_counts.get(x1)+1})
+        else:
+            xaxis_component_counts.update({x1: 1})
+
+xaxis_high_low = {}
+# for component in components:
+#     x1 = endpoint_coordinate_mapping[component["connections"][0]][0]
+#     x2 = endpoint_coordinate_mapping[component["connections"][1]][0]
+#     y1 = endpoint_coordinate_mapping[component["connections"][0]][1]
+#     y2 = endpoint_coordinate_mapping[component["connections"][1]][1]
+#     if y1>y2:
+#         top = component["connections"][1]
+#         bottom = component["connections"][0]
+#     else:
+#         top = component["connections"][0]
+#         bottom = component["connections"][1]
+#     if xaxis_component_counts.get(x1) == 1:
+#         endpoint_coordinate_mapping.update({top:(endpoint_coordinate_mapping.get(top)[0],max_end_y)})
+#         endpoint_coordinate_mapping.update({bottom:(endpoint_coordinate_mapping.get(bottom)[0], min_end_y)})
+#     elif xaxis_component_counts.get(x1) and xaxis_component_counts.get(x1) > 1:
+#         if xaxis_high_low.get(x1):
+#             if endpoint_coordinate_mapping.get(top)[1] > xaxis_high_low.get(x1)[0]:
+#                 xaxis_high_low.update({x1:(top, xaxis_high_low.get(x1)[1])})
+#             elif endpoint_coordinate_mapping.get(bottom)[1] < xaxis_high_low.get(x1)[1]:
+#                 xaxis_high_low.update({x1:(xaxis_high_low.get(x1)[0], bottom)})
+#         else:
+#             xaxis_high_low.update({x1:(top, bottom)})
+
+for xcoord in xaxis_high_low.keys():
+    lowest = xaxis_high_low.get(xcoord)[0]
+    highest = xaxis_high_low.get(xcoord)[1]
+    endpoint_coordinate_mapping.update({lowest: (endpoint_coordinate_mapping.get(lowest)[0], max_end_y)})
+    endpoint_coordinate_mapping.update({highest: (endpoint_coordinate_mapping.get(highest)[0], min_end_y)})
+
+# updates all_coordinates to endpoint_coordinate_mapping
+for i,group in enumerate(all_connections):
+    for j,point in enumerate(group):
+        all_coordinates[i][j] = endpoint_coordinate_mapping[point]
         
+# Connecting wires between nodes in each group        
+for group in all_coordinates:
+    group.sort(key=lambda coord: coord[0])
+    for i in range(len(group)-1):
+        falstad_input += 'w ' + str(group[i][0]) + ' ' + str(group[i][1]) + ' ' + str(group[i+1][0]) + ' ' + str(group[i+1][1]) + ' ' + str(0) +'\n'
 
+falstad_mapping = {'V': 'v','arr': 'i', 'C':'c', 'i': 'i', 'L': 'l', 'l-':'l-', 'R': 'r'}
 
-print(components)
+for component in components:
+    #print(component)
+    additional_flag = ''
+    voltage_flag = ''
+    if falstad_mapping.get(component['component']) in ['c', 'l']:
+        additional_flag += '0'
+    elif falstad_mapping.get(component['component']) == 'v': #v x1 y1 x2 y2 flags dc_value ac_value ac_phase waveform frequency duty_cycle
+        additional_flag += '0 0 0.5'
+        voltage_flag = '0 0 0'
+    x1 = str(endpoint_coordinate_mapping[component['connections'][0]][0])
+    y1 = str(endpoint_coordinate_mapping[component['connections'][0]][1])
+    x2 = str(endpoint_coordinate_mapping[component['connections'][1]][0])
+    y2 = str(endpoint_coordinate_mapping[component['connections'][1]][1])
+    if component['value']:
+        falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' ' + str(component['value']) + ' ' + additional_flag + '\n'
+    else:
+        falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' 1 ' + additional_flag + '\n'
 
+print(falstad_input)
+pyperclip.copy(falstad_input)
 
-
-
-
+# plt.title("Circuit")
+# plt.show()
+webbrowser.open("https://www.falstad.com/circuit/circuitjs.html")
 cv2.imshow('Endpoints', thinned)
 cv2.imshow('Original', image)
 cv2.waitKey(0)

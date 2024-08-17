@@ -3,3 +3,4 @@ venv
 __pycache__*
 output_components_removed.png
 output.png
+*__pycache__
