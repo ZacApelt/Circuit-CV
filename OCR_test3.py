@@ -21,8 +21,16 @@ def classify(result):
         #    split_text[1] = split_text[1].replace("o", "").replace("O", "")
         print(split_text)
 
-        try:
+
+        # check if the first part of the split_text is a number
+        if split_text[0].isnumeric():
             split_text[0] = float(split_text[0])
+        else:
+            split_text[0] = 0
+        
+        print(split_text)
+
+        if len(split_text) > 1:
 
             # fix up the units
             if "K" in split_text[1] or "k" in split_text[1]:
@@ -37,27 +45,29 @@ def classify(result):
                 # this is for mistaking mu for p
                 split_text[0] *= 0.000001
             
-            # fix multiplication rounding errors
-            split_text[0] = round(split_text[0], 9)
+        # fix multiplication rounding errors
+        split_text[0] = round(split_text[0], 9)
 
-            value = split_text[0]
+        value = split_text[0]
+
+        if len(split_text) > 1:
             text = split_text[1]
+        else:
+            text = ""
 
-            print(text, value)
+        print(text, value)
 
-            if "V" in text or "v" in text:
-                components.append({"component": "V", "value": value, "corners": text1[0]})
-            elif "A" in text:
-                components.append({"component": "A", "value": value, "corners": text1[0]})
-            elif "H" in text:
-                components.append({"component": "L", "value": value, "corners": text1[0]})
-            elif "F" in text:
-                components.append({"component": "C", "value": value, "corners": text1[0]})
-            else:
-                components.append({"component": "R", "value": value, "corners": text1[0]})
-        except ValueError:
-            print("Could not convert to float")
-            continue
+        if "V" in text or "v" in text:
+            components.append({"component": "V", "value": value, "corners": text1[0]})
+        elif "A" in text:
+            components.append({"component": "A", "value": value, "corners": text1[0]})
+        elif "H" in text:
+            components.append({"component": "L", "value": value, "corners": text1[0]})
+        elif "F" in text:
+            components.append({"component": "C", "value": value, "corners": text1[0]})
+        else:
+            components.append({"component": "R", "value": value, "corners": text1[0]})
+
     return components
 
 
