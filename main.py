@@ -111,7 +111,7 @@ cv2.imwrite("./binary_frame.png", binary)
 
 # Load the image
 image_path = "./binary_frame.png"  # specify file location 
-use_api = True
+use_api = False
 
 image = Image.open(image_path).convert("RGB")
 
