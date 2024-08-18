@@ -11,6 +11,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pyperclip
 import webbrowser
+import math
+import falstadapi as api
+import urllib.parse
 
 # Create a new directed graph
 graph = nx.Graph()
@@ -309,28 +312,28 @@ for component in components:
             xaxis_component_counts.update({x1: 1})
 
 xaxis_high_low = {}
-# for component in components:
-#     x1 = endpoint_coordinate_mapping[component["connections"][0]][0]
-#     x2 = endpoint_coordinate_mapping[component["connections"][1]][0]
-#     y1 = endpoint_coordinate_mapping[component["connections"][0]][1]
-#     y2 = endpoint_coordinate_mapping[component["connections"][1]][1]
-#     if y1>y2:
-#         top = component["connections"][1]
-#         bottom = component["connections"][0]
-#     else:
-#         top = component["connections"][0]
-#         bottom = component["connections"][1]
-#     if xaxis_component_counts.get(x1) == 1:
-#         endpoint_coordinate_mapping.update({top:(endpoint_coordinate_mapping.get(top)[0],max_end_y)})
-#         endpoint_coordinate_mapping.update({bottom:(endpoint_coordinate_mapping.get(bottom)[0], min_end_y)})
-#     elif xaxis_component_counts.get(x1) and xaxis_component_counts.get(x1) > 1:
-#         if xaxis_high_low.get(x1):
-#             if endpoint_coordinate_mapping.get(top)[1] > xaxis_high_low.get(x1)[0]:
-#                 xaxis_high_low.update({x1:(top, xaxis_high_low.get(x1)[1])})
-#             elif endpoint_coordinate_mapping.get(bottom)[1] < xaxis_high_low.get(x1)[1]:
-#                 xaxis_high_low.update({x1:(xaxis_high_low.get(x1)[0], bottom)})
-#         else:
-#             xaxis_high_low.update({x1:(top, bottom)})
+for component in components:
+    x1 = endpoint_coordinate_mapping[component["connections"][0]][0]
+    x2 = endpoint_coordinate_mapping[component["connections"][1]][0]
+    y1 = endpoint_coordinate_mapping[component["connections"][0]][1]
+    y2 = endpoint_coordinate_mapping[component["connections"][1]][1]
+    if y1>y2:
+        top = component["connections"][1]
+        bottom = component["connections"][0]
+    else:
+        top = component["connections"][0]
+        bottom = component["connections"][1]
+    if xaxis_component_counts.get(x1) == 1:
+        endpoint_coordinate_mapping.update({top:(endpoint_coordinate_mapping.get(top)[0],max_end_y)})
+        endpoint_coordinate_mapping.update({bottom:(endpoint_coordinate_mapping.get(bottom)[0], min_end_y)})
+    elif xaxis_component_counts.get(x1) and xaxis_component_counts.get(x1) > 1:
+        if xaxis_high_low.get(x1):
+            if endpoint_coordinate_mapping.get(top)[1] > xaxis_high_low.get(x1)[0]:
+                xaxis_high_low.update({x1:(top, xaxis_high_low.get(x1)[1])})
+            elif endpoint_coordinate_mapping.get(bottom)[1] < xaxis_high_low.get(x1)[1]:
+                xaxis_high_low.update({x1:(xaxis_high_low.get(x1)[0], bottom)})
+        else:
+            xaxis_high_low.update({x1:(top, bottom)})
 
 for xcoord in xaxis_high_low.keys():
     lowest = xaxis_high_low.get(xcoord)[0]
@@ -338,11 +341,18 @@ for xcoord in xaxis_high_low.keys():
     endpoint_coordinate_mapping.update({lowest: (endpoint_coordinate_mapping.get(lowest)[0], max_end_y)})
     endpoint_coordinate_mapping.update({highest: (endpoint_coordinate_mapping.get(highest)[0], min_end_y)})
 
+#snapping to a grid
+snapping_factor = 5
+for endpoint in endpoint_coordinate_mapping.keys():
+    coords = endpoint_coordinate_mapping.get(endpoint)
+    new_point = (math.floor(coords[0]/snapping_factor)*snapping_factor, math.floor(coords[1]/snapping_factor)*snapping_factor)
+    endpoint_coordinate_mapping.update({endpoint: new_point})
+
 # updates all_coordinates to endpoint_coordinate_mapping
 for i,group in enumerate(all_connections):
     for j,point in enumerate(group):
         all_coordinates[i][j] = endpoint_coordinate_mapping[point]
-        
+
 # Connecting wires between nodes in each group        
 for group in all_coordinates:
     group.sort(key=lambda coord: coord[0])
@@ -370,11 +380,18 @@ for component in components:
         falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' 1 ' + additional_flag + '\n'
 
 print(falstad_input)
-pyperclip.copy(falstad_input)
+#pyperclip.copy(falstad_input)
 
 # plt.title("Circuit")
 # plt.show()
-webbrowser.open("https://www.falstad.com/circuit/circuitjs.html")
+# URL-encode the circuit data
+encoded_data = urllib.parse.quote(falstad_input)
+
+# Construct the Falstad URL
+falstad_url = f"https://www.falstad.com/circuit/circuitjs.html?cct={encoded_data}"
+
+webbrowser.open(falstad_url)
+
 cv2.imshow('Endpoints', thinned)
 cv2.imshow('Original', image)
 cv2.waitKey(0)
