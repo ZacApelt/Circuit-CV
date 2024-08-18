@@ -14,6 +14,23 @@ import webbrowser
 import math
 import falstadapi as api
 import urllib.parse
+import threading
+import time
+import sys
+
+# Function to print the loading bar
+def loading_bar():
+    while True:
+        for i in range(101):
+            # Move the cursor to the beginning of the line (0,0) and clear the line
+            sys.stdout.write("\033[K")  # Clears the line
+            sys.stdout.write(f"\rLoading: [{i * '#':<100}] {i}%")
+            sys.stdout.flush()
+            time.sleep(0.1)
+        break
+
+loading_thread = threading.Thread(target=loading_bar)
+loading_thread.start()
 
 # Create a new directed graph
 graph = nx.Graph()
@@ -22,21 +39,40 @@ graph = nx.Graph()
 model = YOLO('runs/detect/train2/weights/best.pt')
 
 # opencv image preprocessing
-image = cv2.imread('./circuits/frame.png')
+image = cv2.imread('./circuits/cir7.png')
 # binary filter the image
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-_, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
-# remove small contours
-no_noise = np.zeros_like(binary)
-contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-for contour in contours:
-    if cv2.contourArea(contour) > 50:
-        cv2.drawContours(no_noise, [contour], -1, 255, -1)
-        # remove small contours
-        
+#_, binary = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)
+
+binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 2)
+
+binary = cv2.bitwise_not(binary)
+
+# Find contours with hierarchy
+contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+# Iterate through contours
+for i, contour in enumerate(contours):
+    # Get the contour area
+    area = cv2.contourArea(contour)
+
+    # Remove small contours, whether outer or inner
+    if area < 10:
+        cv2.drawContours(binary, [contour], -1, 0, -1)
+    # Check if it's an inner contour and remove it if it's below a threshold
+    elif hierarchy[0][i][3] != -1 and area < 20:  # Adjust this inner contour threshold as needed
+        cv2.drawContours(binary, [contour], -1, 0, -1)
+
+blurred = cv2.GaussianBlur(binary, (1, 1), 0)
+# Invert the binary image back to the original state
+binary = cv2.bitwise_not(blurred)
+
+# convert to grayscale and blur
+#gray = cv2.cvtColor(binary, cv2.COLOR_BGR2GRAY)
 
 
-cv2.imwrite("./circuits/binary_frame.png", image)
+
+cv2.imwrite("./circuits/binary_frame.png", binary)
 
 
 # Load the image
