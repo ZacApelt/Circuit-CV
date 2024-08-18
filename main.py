@@ -22,10 +22,10 @@ graph = nx.Graph()
 model = YOLO('runs/detect/train2/weights/best.pt')
 
 # opencv image preprocessing
-image = cv2.imread('./circuits/frame2.jpg')
+image = cv2.imread('./circuits/frame.png')
 # binary filter the image
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-_, binary = cv2.threshold(gray, 210, 255, cv2.THRESH_BINARY)
+_, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
 # remove small contours
 no_noise = np.zeros_like(binary)
 contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -36,7 +36,7 @@ for contour in contours:
         
 
 
-cv2.imwrite("./circuits/binary_frame.png", binary)
+cv2.imwrite("./circuits/binary_frame.png", image)
 
 
 # Load the image
