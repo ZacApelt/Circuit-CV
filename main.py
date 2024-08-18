@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import pyperclip
 import webbrowser
 import math
-import falstadapi as api
 import urllib.parse
 
 # Create a new directed graph
@@ -22,7 +21,7 @@ graph = nx.Graph()
 model = YOLO('runs/detect/train2/weights/best.pt')
 
 # opencv image preprocessing
-image = cv2.imread('./circuits/frame.png')
+image = cv2.imread('./circuits/cir7.png')
 # binary filter the image
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 _, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
@@ -85,7 +84,7 @@ if image is not None:
     annotated_image = results[0].plot()
 
     # Display the annotated image
-    cv2.imshow("YOLOv8 Inference", annotated_image)
+    #cv2.imshow("YOLOv8 Inference", annotated_image)
     image.save("output_components_removed.png")
 
     # Load the image with components removed
@@ -123,11 +122,8 @@ if image is not None:
         draw2.rectangle([x_min, y_min, x_max, y_max], fill="white")
 
     # Show the final image with all bounding boxes removed
-    component_removed_image.show()
+    #component_removed_image.show()
     component_removed_image.save("./circuits/clean_circuit.png")
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 # Graph processing -----------------------------------------------
 # Load the binary image
@@ -254,7 +250,7 @@ for i in range(len(components)):
         components[i]['value'] = 0
 
 
-pprint.pprint(components)
+#pprint.pprint(components)
 
 def graph():
     for i in range(len(all_connections)):
@@ -377,7 +373,7 @@ for component in components:
     else:
         falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' 1 ' + additional_flag + '\n'
 
-print(falstad_input)
+#print(falstad_input)
 #pyperclip.copy(falstad_input)
 
 # plt.title("Circuit")
@@ -390,7 +386,7 @@ falstad_url = f"https://www.falstad.com/circuit/circuitjs.html?cct={encoded_data
 
 webbrowser.open(falstad_url)
 
-cv2.imshow('Endpoints', thinned)
-cv2.imshow('Original', image)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# cv2.imshow('Endpoints', thinned)
+# cv2.imshow('Original', image)
+cv2.imwrite("Node_graph", image)
+
