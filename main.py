@@ -13,6 +13,12 @@ import pyperclip
 import webbrowser
 import math
 import urllib.parse
+from inference_sdk import InferenceHTTPClient
+
+CLIENT = InferenceHTTPClient(
+    api_url="https://detect.roboflow.com",
+    api_key="TD5xEPznLTfQhznZz4pf"
+)
 
 # Create a new directed graph
 graph = nx.Graph()
@@ -33,13 +39,13 @@ for contour in contours:
         cv2.drawContours(no_noise, [contour], -1, 255, -1)
         # remove small contours
         
-
-
 cv2.imwrite("./circuits/binary_frame.png", image)
 
 
 # Load the image
 image_path = "./circuits/binary_frame.png"  # specify file location 
+use_api = True
+
 image = Image.open(image_path).convert("RGB")
 
 # binary filter the image
@@ -51,37 +57,72 @@ reader = easyocr.Reader(['en'])
 component_bounding_boxes = torch.empty((0, 4))
 components = []
 
+apiresults = CLIENT.infer("circuits/cir7.png", model_id="circuit-recognition/2")
+class_dict = {0: 'V', 1: 'arr', 2: 'V', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'C'}
+
+if use_api:
+    for detection in apiresults['predictions']:
+        print(detection)
+        id = class_dict.get(detection.get("class_id"))
+        # Extract the bounding box coordinates
+        x = detection['x']
+        y = detection['y']
+        width = detection['width']
+        height = detection['height']
+        
+        # Compute the bounding box coordinates
+        x1 = x - width / 2
+        y1 = y - height / 2
+        x2 = x + width / 2
+        y2 = y + height / 2
+        
+        # Round coordinates
+        x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+        components.append({'component': id, 'corners': [(x2,y1), (x1, y2)]})
+
+
+
+
 if image is not None:
     # Get component bounding boxes using YOLO
+    
     results = model.predict(source=image_path)
     # Extract component bounding boxes
-    class_dict = {0: 'V', 1: 'arr', 2: 'C', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'C'}
+    
     #{0: 'acv', 1: 'arr', 2: 'c', 3: 'i', 4: 'l', 5: 'l-', 6: 'r', 7: 'v'}
-
-    for detection in results[0]:
-        id = class_dict[int(detection.boxes.cls.item())]
-        
-        box = detection.boxes.xyxy  # Extract the bounding box
-        component_bounding_boxes = torch.cat((component_bounding_boxes, box), dim=0)
-
-        # Convert to a list of coordinates
-        x1, y1, x2, y2 = box[0]
-        corners = [
-            (round(x2.item()), round(y1.item())),
-            (round(x1.item()), round(y2.item()))]
-
-        components.append({'component': id, 'corners': corners})
-    # Create a drawing object
-    #pprint.pprint(components)
     draw = ImageDraw.Draw(image)  
+    if not use_api:
+        for detection in results[0]:
+            id = class_dict[int(detection.boxes.cls.item())]
+            
+            box = detection.boxes.xyxy  # Extract the bounding box
+            component_bounding_boxes = torch.cat((component_bounding_boxes, box), dim=0)
 
-    # Replace each component bounding box with white space
-    for box in component_bounding_boxes:
-        x_min, y_min, x_max, y_max = map(int, box.tolist())
-        draw.rectangle([x_min, y_min, x_max, y_max], fill="white")
+            # Convert to a list of coordinates
+            x1, y1, x2, y2 = box[0]
+            corners = [
+                (round(x2.item()), round(y1.item())),
+                (round(x1.item()), round(y2.item()))]
+
+            components.append({'component': id, 'corners': corners})
+        # Create a drawing object
+        #pprint.pprint(components)
+        
+        
+
+        # Replace each component bounding box with white space
+        for box in component_bounding_boxes:
+            x_min, y_min, x_max, y_max = map(int, box.tolist())
+            draw.rectangle([x_min, y_min, x_max, y_max], fill="white")
+    else:
+        for component in components:
+            corner1 = component.get('corners')[0]
+            corner2 = component.get('corners')[1]
+            draw.rectangle([corner2[0], corner1[1], corner1[0], corner2[1]], fill="white")
+    print("COMPOENTENTS: ", components)
 
     # Save the intermediate image after component removal
-    annotated_image = results[0].plot()
+    #annotated_image = results[0].plot()
 
     # Display the annotated image
     #cv2.imshow("YOLOv8 Inference", annotated_image)
@@ -95,13 +136,17 @@ if image is not None:
     # Perform OCR on the image
     ocr_results = reader.readtext("output_components_removed.png")
     classified_results = ocr.classify(ocr_results)
+    for result in classified_results:
+        if result.get('value') == None:
+            classified_results.remove(result)
+    print('ocr', classified_results)
 
     # Initialize an empty tensor for OCR bounding boxes
     ocr_bounding_boxes = torch.empty((0, 4))
 
     # Extract OCR bounding boxes from the classified results
     for component in classified_results:
-        #pprint.pprint(component)
+        pprint.pprint(component)
         corner_box = component["corners"]
         
         # Convert corner format to xyxy format
@@ -116,6 +161,12 @@ if image is not None:
         # Concatenate the corner box tensor to the OCR bounding boxes tensor
         ocr_bounding_boxes = torch.cat((ocr_bounding_boxes, corner_box_tensor), dim=0)
 
+    cv_image = cv2.imread("circuits/cir7.png")
+    for box in ocr_bounding_boxes:
+        x_min, y_min, x_max, y_max = map(int, box.tolist())
+        cv2.rectangle(cv_image, (x_min, y_min), (x_max, y_max), (0,0,255), 2)
+
+    cv2.imshow('rectanle', cv_image)
     # Replace each OCR bounding box with white space
     for box in ocr_bounding_boxes:
         x_min, y_min, x_max, y_max = map(int, box.tolist())
@@ -131,6 +182,7 @@ image = cv2.imread('./circuits/clean_circuit.png', 0)
 # Invert the image if needed (now you have white lines on a black background)
 binary_image = cv2.bitwise_not(image)
 thinned = cv2.ximgproc.thinning(binary_image)
+cv2.imshow("thinnewd", thinned)
 
 
 # find the end points
@@ -353,32 +405,43 @@ for group in all_coordinates:
     for i in range(len(group)-1):
         falstad_input += 'w ' + str(group[i][0]) + ' ' + str(group[i][1]) + ' ' + str(group[i+1][0]) + ' ' + str(group[i+1][1]) + ' ' + str(0) +'\n'
 
-falstad_mapping = {'V': 'v','arr': 'i', 'C':'c', 'i': 'i', 'L': 'l', 'l-':'l-', 'R': 'r'}
+falstad_mapping = {'V': 'v','arr': 'i', 'C':'c', 'i': 'i', 'L': 'l', 'l-':'l-', 'R': 'r', 'F': 'c'}
+orc_mapping = {'V': 'v','arr': 'i', 'F':'c', 'i': 'i', 'H': 'l', 'l-':'l-', 'R': 'r', 'C': 'c', 'L': 'l'}
 
+
+pprint.pprint(components)
 for component in components:
-    #print(component)
+  
     additional_flag = ''
     voltage_flag = ''
     if falstad_mapping.get(component['component']) in ['c', 'l']:
-        additional_flag += '0'
+        comp_symbol  = orc_mapping.get(component['OCR classification'])
+        if orc_mapping.get(component['OCR classification']) == 'v':
+            voltage_flag = '0 0 0'
+            additional_flag += '0 0 0.5'
+        else:
+            additional_flag += '0'
     elif falstad_mapping.get(component['component']) == 'v': #v x1 y1 x2 y2 flags dc_value ac_value ac_phase waveform frequency duty_cycle
-        additional_flag += '0 0 0.5'
-        voltage_flag = '0 0 0'
+        if orc_mapping.get(component['OCR classification']) == 'v':
+            voltage_flag = '0 0 0'
+            additional_flag += '0 0 0.5'
+        else:
+            additional_flag += '0'
+        comp_symbol  = orc_mapping.get(component['OCR classification'])
+    else:
+        comp_symbol = falstad_mapping.get(component['component'])
+    print(comp_symbol, component['OCR classification'], component['component'])
     x1 = str(endpoint_coordinate_mapping[component['connections'][0]][0])
     y1 = str(endpoint_coordinate_mapping[component['connections'][0]][1])
     x2 = str(endpoint_coordinate_mapping[component['connections'][1]][0])
     y2 = str(endpoint_coordinate_mapping[component['connections'][1]][1])
+    print(component['component'], voltage_flag)
     if component['value']:
-        falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' ' + str(component['value']) + ' ' + additional_flag + '\n'
+        falstad_input +=  comp_symbol +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' ' + str(component['value']) + ' ' + additional_flag + '\n'
     else:
-        falstad_input += falstad_mapping.get(component['component']) +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' 1 ' + additional_flag + '\n'
+        falstad_input += comp_symbol +' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' 1 ' + additional_flag + '\n'
 
-#print(falstad_input)
-#pyperclip.copy(falstad_input)
-
-# plt.title("Circuit")
-# plt.show()
-# URL-encode the circuit data
+print(falstad_input)
 encoded_data = urllib.parse.quote(falstad_input)
 
 # Construct the Falstad URL
@@ -386,7 +449,9 @@ falstad_url = f"https://www.falstad.com/circuit/circuitjs.html?cct={encoded_data
 
 webbrowser.open(falstad_url)
 
-# cv2.imshow('Endpoints', thinned)
-# cv2.imshow('Original', image)
-cv2.imwrite("Node_graph", image)
+cv2.imshow('Endpoints', thinned)
+cv2.imshow('Original', image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+#cv2.imwrite("Node_graph", image)
 

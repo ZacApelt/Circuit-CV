@@ -37,6 +37,9 @@ def classify(result):
             unit = 'R'
         else:
             value, unit = split_string(text)
+            
+        if unit.isnumeric():
+            unit = 'R'
 
         value = convert_to_float_or_int(value)
         # print(value, unit)
@@ -76,4 +79,4 @@ def classify(result):
 result = reader.readtext('./circuits/cir9.png')
 classified_results = classify(result)
 # for component in classified_results:
-#     print(component)
+#     print('ocr', component)
