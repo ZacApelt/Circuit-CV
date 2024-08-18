@@ -39,7 +39,7 @@ def classify(result):
             value, unit = split_string(text)
 
         value = convert_to_float_or_int(value)
-        print(value, unit)
+        # print(value, unit)
 
         if "K" in unit or "k" in unit:
             value *= 1000
@@ -75,5 +75,5 @@ def classify(result):
 # Read text from an image
 result = reader.readtext('./circuits/cir9.png')
 classified_results = classify(result)
-for component in classified_results:
-    print(component)
+# for component in classified_results:
+#     print(component)
