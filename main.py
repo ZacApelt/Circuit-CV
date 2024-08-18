@@ -17,6 +17,31 @@ import threading
 import time
 import sys
 
+# connect to IP camera
+cap = cv2.VideoCapture("http://10.89.76.82:8080/video")
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # scale the frame
+    frame = cv2.resize(frame, (640, 480))
+
+    # display the frame
+    cv2.imshow("frame", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+    if cv2.waitKey(1) & 0xFF == ord('s'):
+        cv2.imwrite("./circuits/frame.png", frame)
+        print("Frame saved")
+        break
+
+    if cv2.waitKey(1) & 0xFF == ord('r'):
+        break
+
+
+
 # Function to print the loading bar
 def loading_bar():
     while True:
@@ -44,13 +69,16 @@ graph = nx.Graph()
 model = YOLO('runs/detect/train2/weights/best.pt')
 
 # opencv image preprocessing
-image = cv2.imread('./circuits/cir7.png')
+image = cv2.imread('./circuits/frame.png')
 # binary filter the image
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#_, binary = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)
+#_, binary = cv2.threshold(gray, 190, 255, cv2.THRESH_BINARY)
 
-binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 2)
+binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
 
+cv2.imshow("binary", binary)
+
+# Invert the binary image
 binary = cv2.bitwise_not(binary)
 
 # Find contours with hierarchy
@@ -62,26 +90,27 @@ for i, contour in enumerate(contours):
     area = cv2.contourArea(contour)
 
     # Remove small contours, whether outer or inner
-    if area < 10:
+    if area < 5:
         cv2.drawContours(binary, [contour], -1, 0, -1)
     # Check if it's an inner contour and remove it if it's below a threshold
-    elif hierarchy[0][i][3] != -1 and area < 20:  # Adjust this inner contour threshold as needed
+    elif hierarchy[0][i][3] != -1 and area < 5:  # Adjust this inner contour threshold as needed
         cv2.drawContours(binary, [contour], -1, 0, -1)
 
-blurred = cv2.GaussianBlur(binary, (1, 1), 0)
 # Invert the binary image back to the original state
-binary = cv2.bitwise_not(blurred)
+binary = cv2.bitwise_not(binary)
 
 # convert to grayscale and blur
 #gray = cv2.cvtColor(binary, cv2.COLOR_BGR2GRAY)
 
+cv2.imshow("filtered", binary)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
-
-cv2.imwrite("./circuits/binary_frame.png", binary)
+cv2.imwrite("./binary_frame.png", binary)
 
 
 # Load the image
-image_path = "./circuits/binary_frame.png"  # specify file location 
+image_path = "./binary_frame.png"  # specify file location 
 use_api = True
 
 image = Image.open(image_path).convert("RGB")
@@ -95,7 +124,7 @@ reader = easyocr.Reader(['en'])
 component_bounding_boxes = torch.empty((0, 4))
 components = []
 
-apiresults = CLIENT.infer("circuits/cir7.png", model_id="circuit-recognition/2")
+apiresults = CLIENT.infer(image_path, model_id="circuit-recognition/2")
 class_dict = {0: 'V', 1: 'arr', 2: 'V', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'C'}
 
 if use_api:
