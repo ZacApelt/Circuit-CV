@@ -21,9 +21,29 @@ graph = nx.Graph()
 # Load the YOLOv8 model
 model = YOLO('runs/detect/train2/weights/best.pt')
 
+# opencv image preprocessing
+image = cv2.imread('./circuits/frame.png')
+# binary filter the image
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+_, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+# remove small contours
+no_noise = np.zeros_like(binary)
+contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+for contour in contours:
+    if cv2.contourArea(contour) > 50:
+        cv2.drawContours(no_noise, [contour], -1, 255, -1)
+        # remove small contours
+        
+
+
+cv2.imwrite("./circuits/binary_frame.png", image)
+
+
 # Load the image
-image_path = "./circuits/cir7.png"  # specify file location 
+image_path = "./circuits/binary_frame.png"  # specify file location 
 image = Image.open(image_path).convert("RGB")
+
+# binary filter the image
 
 # Create an OCR reader object
 reader = easyocr.Reader(['en'])
@@ -103,11 +123,11 @@ if image is not None:
         draw2.rectangle([x_min, y_min, x_max, y_max], fill="white")
 
     # Show the final image with all bounding boxes removed
-    #component_removed_image.show()
+    component_removed_image.show()
     component_removed_image.save("./circuits/clean_circuit.png")
 
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 # Graph processing -----------------------------------------------
 # Load the binary image
@@ -229,6 +249,9 @@ for i in range(len(components)):
     if ocr_distance:
         components[i]['OCR classification'] = classified_results[ocr_distance[0][0]]['component']
         components[i]['value'] = classified_results[ocr_distance[0][0]]['value']
+    else:
+        components[i]['OCR classification'] = 'None'
+        components[i]['value'] = 0
 
 
 pprint.pprint(components)
