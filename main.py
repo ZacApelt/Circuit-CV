@@ -100,6 +100,7 @@ class_dict = {0: 'V', 1: 'arr', 2: 'V', 3: 'i', 4: 'L', 5: 'l-', 6: 'R', 7: 'C'}
 
 if use_api:
     for detection in apiresults['predictions']:
+        double = False
         print(detection)
         id = class_dict.get(detection.get("class_id"))
         # Extract the bounding box coordinates
@@ -116,7 +117,16 @@ if use_api:
         
         # Round coordinates
         x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
-        components.append({'component': id, 'corners': [(x2,y1), (x1, y2)]})
+
+        for component in components:
+            subx = component.get('corners')[0][0]
+            suby = component.get('corners')[0][1]
+            if math.sqrt(((x2 - subx)**2) +((y1 - suby)**2)) < 30 and math.sqrt(((x2 - subx)**2) +((y1 - suby)**2)) != 0:
+                double = True
+                print("found double!")
+                print(math.sqrt(((x - subx)**2) +((y - suby)**2)))
+        if not double:
+            components.append({'component': id, 'corners': [(x2,y1), (x1, y2)]})
 
 
 
