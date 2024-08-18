@@ -48,9 +48,7 @@ if image is not None:
         # Convert to a list of coordinates
         x1, y1, x2, y2 = box[0]
         corners = [
-            #(round(x1.item()), round(y1.item())),
             (round(x2.item()), round(y1.item())),
-            #(round(x2.item()), round(y2.item())),
             (round(x1.item()), round(y2.item()))]
 
         components.append({'component': id, 'corners': corners})
