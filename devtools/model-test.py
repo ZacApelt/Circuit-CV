@@ -2,7 +2,7 @@ import cv2
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
 import torch
-import OCR_test3 as ocr
+import devtools.ocr as ocr
 import easyocr
 
 
