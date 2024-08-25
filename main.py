@@ -1,3 +1,4 @@
+## Imports
 import cv2
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
@@ -26,7 +27,7 @@ use_api = False
 ocr_threshold = 0.7
 
 
-## Main
+## Main pipeline
 # Preprocess the image
 preprocessing(image_path)
 
