@@ -8,8 +8,9 @@ warnings.filterwarnings("ignore")
 
 # Create an OCR reader object
 reader = easyocr.Reader(lang_list=['en'], gpu=False)
-image_path = './circuits/cir7.png'
-result = reader.readtext(image=image_path, text_threshold=0.7)
+image_path2 = './circuits/cir10.png'
+image_path = './outputs/components_removed.png'
+result = reader.readtext(image=image_path, text_threshold=1)
 print(result)
 
 # Load the image using OpenCV
