@@ -298,16 +298,17 @@ def calculate_endpoints(classified_results, components):
     for i in range(1, thinned.shape[0] - 1):
         for j in range(1, thinned.shape[1] - 1):
             if thinned[i, j] == 255:
-                # if a white pixel
                 neighbours = thinned[i-1:i+2, j-1:j+2]
                 if np.sum(neighbours) == 255*2:
-                    endpoints.append({"id": id, "pos": (j, i)})
-                    # put a red pixel at the endpoint
-                    cv2.circle(image, (j, i), 5, (0, 0, 255), 2)
-                    # put id next to the endpoint
-                    cv2.putText(image, str(id), (j+10, i),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-                    id += 1
+                    if all(np.sqrt((endpoint['pos'][0] - j)**2 + (endpoint['pos'][1] - i)**2) > 20 for endpoint in endpoints) or not len(endpoints):
+                        endpoints.append({"id": id, "pos": (j, i)})
+                        # put a red pixel at the endpoint
+                        cv2.circle(image, (j, i), 5, (0, 0, 255), 2)
+                        # put id next to the endpoint
+                        cv2.putText(image, str(id), (j+10, i),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+                        id += 1
+                            
 
     # find the max id of the endpoints
     max_id = max([endpoint['id'] for endpoint in endpoints])
