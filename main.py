@@ -26,20 +26,25 @@ ocr_threshold = 0.99
 
 
 ## Main pipeline
-# Preprocess the image
-preprocessing(image_path)
+def process_image(image_path=image_path, use_api=use_api, ocr_threshold=ocr_threshold):
 
-# Generate bounding boxes
-components, bboxs = generate_bboxes(use_api, model, image_path)
+    # Preprocess the image
+    preprocessing(image_path)
 
-# Find component finds
-ocr_results = ocr(bboxs, ocr_threshold)
+    # Generate bounding boxes
+    components, bboxs = generate_bboxes(use_api, model, image_path)
 
-# Calculate endpoints
-endpoints, all_connections, all_coordinates, endpoint_coordinate_mapping = calculate_endpoints(ocr_results, components)
+    # Find component finds
+    ocr_results = ocr(bboxs, ocr_threshold)
 
-# Make it pretty
-# formatting_circuit(components, endpoints, all_connections, all_coordinates, endpoint_coordinate_mapping)
+    # Calculate endpoints
+    endpoints, all_connections, all_coordinates, endpoint_coordinate_mapping = calculate_endpoints(ocr_results, components)
 
-# Generate final circuit
-circuit_out = generating_circuit(all_coordinates, endpoint_coordinate_mapping, components, all_connections)
+    # Make it pretty
+    # formatting_circuit(components, endpoints, all_connections, all_coordinates, endpoint_coordinate_mapping)
+
+    # Generate final circuit
+    generating_circuit(all_coordinates, endpoint_coordinate_mapping, components, all_connections)
+
+if __name__ == "__main__":
+    process_image()
