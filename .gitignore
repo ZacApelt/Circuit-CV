@@ -12,3 +12,4 @@ __pycache__/
 # Ignore specific file types and directories
 *.pyd
 *.pyo
+outputs/

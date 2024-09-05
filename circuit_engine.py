@@ -441,6 +441,8 @@ def generating_circuit(all_coordinates, endpoint_coordinate_mapping, components,
         y1 = str(endpoint_coordinate_mapping[component['connections'][0]][1])
         x2 = str(endpoint_coordinate_mapping[component['connections'][1]][0])
         y2 = str(endpoint_coordinate_mapping[component['connections'][1]][1])
+        if not comp_symbol:
+            continue
         if component['value']:
             falstad_input += comp_symbol + ' ' + x1 + ' ' + y1 + ' ' + x2 + ' ' + y2 + ' ' + str(0) + ' ' + voltage_flag + ' ' + str(component['value']) + ' ' + additional_flag + '\n'
         else:
