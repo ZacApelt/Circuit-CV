@@ -568,7 +568,7 @@
         chrome.storage.sync.set({ download: e });
       chrome.browserAction.setTitle({
         title:
-          "Hold the Option/Alt key and drag the mouse to create partial screenshots.\nClick the icon to create full-page screenshots.",
+          "Hold Alt key and drag to select a circuit!",
       }),
         chrome.browserAction.onClicked.addListener(function () {
           chrome.tabs.captureVisibleTab(async function (t) {
@@ -601,33 +601,36 @@
           });
         }),
         chrome.runtime.onMessage.addListener(function (t, e, n) {
-            if ("SCREENSHOT_WITH_COORDINATES" === t.msg) {
-              var r = t.rect,
-                i = t.windowSize;
-          
-              chrome.tabs.captureVisibleTab(function (t) {
-                if (t) {
-                  var e = t;
-                  new Promise(function (t, n) {
-                    var r = new Image();
-                    r.onload = function () {
-                      t({ w: r.width, h: r.height });
-                    };
-                    r.src = e;
-                  }).then(async function (e) {
-                    var n = e.w / i.width,
-                      a = Math.floor(r.x * n),
-                      s = Math.floor(r.y * n),
-                      c = Math.floor(r.width * n),
-                      u = Math.floor(r.height * n);
-          
-                    o()(t, function () {
-                      this.crop(a, s, c, u).toDataURL(async function (t) {
-                        chrome.storage.sync.get(["download", "openInTab"], async function (e) {
+          if ("SCREENSHOT_WITH_COORDINATES" === t.msg) {
+            var r = t.rect,
+              i = t.windowSize;
+
+            chrome.tabs.captureVisibleTab(function (t) {
+              if (t) {
+                var e = t;
+                new Promise(function (t, n) {
+                  var r = new Image();
+                  r.onload = function () {
+                    t({ w: r.width, h: r.height });
+                  };
+                  r.src = e;
+                }).then(async function (e) {
+                  var n = e.w / i.width,
+                    a = Math.floor(r.x * n),
+                    s = Math.floor(r.y * n),
+                    c = Math.floor(r.width * n),
+                    u = Math.floor(r.height * n);
+
+                  o()(t, function () {
+                    this.crop(a, s, c, u).toDataURL(async function (t) {
+                      chrome.storage.sync.get(
+                        ["download", "openInTab"],
+                        async function (e) {
                           if (e.download) {
                             chrome.downloads.download({
                               url: t,
-                              filename: new Date().getTime().toString() + ".jpg",
+                              filename:
+                                new Date().getTime().toString() + ".png",
                             });
                           }
                           if (e.openInTab) {
@@ -637,23 +640,22 @@
                           const data = { data: t };
                           const url = `http://localhost:5000/run-script`;
                           const response = await fetch(url, {
-                            method: 'POST',
+                            method: "POST",
                             headers: {
-                              'Content-Type': 'application/json',
+                              "Content-Type": "application/json",
                             },
                             body: JSON.stringify(data),
                           });
                           const result = await response.text();
                           console.log(result); // Optionally log the result
-                        });
-                      });
+                        }
+                      );
                     });
                   });
-                }
-              });
-            }
-          });
+                });
+              }
+            });
+          }
+        });
     })();
 })();
-
-

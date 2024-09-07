@@ -18,7 +18,7 @@ def run_script():
 
     save_base64_image('outputs/image_string.txt', 'outputs/chrome_image.png')
     process_image(image_path='outputs/chrome_image.png')
-    
+
     return jsonify({'message': 'Image processed successfully'})
 
 if __name__ == '__main__':

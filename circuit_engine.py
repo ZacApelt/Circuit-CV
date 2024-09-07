@@ -236,12 +236,13 @@ def ocr(bboxs, thresh):
         image="outputs/components_removed.png", threshold=thresh)
 
     # Draw bounding boxes and labels on the image
-    for result in ocr_results:
-        points, text, confidence = result
-        points = [tuple(point) for point in points]
+    if ocr_results:
+        for result in ocr_results:
+            points, text, confidence = result
+            points = [tuple(point) for point in points]
 
-        cv2.polylines(bboxs, [np.array(points)], isClosed=True, color=(0, 255, 0), thickness=2) # draw bounding box
-        cv2.putText(bboxs, text, points[0], cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2) # draw text
+            cv2.polylines(bboxs, [np.array(points)], isClosed=True, color=(0, 255, 0), thickness=2) # draw bounding box
+            cv2.putText(bboxs, text, points[0], cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2) # draw text
 
     classified_results = classify_ocr_results(ocr_results)
     for result in classified_results:
@@ -320,8 +321,7 @@ def calculate_endpoints(classified_results, components):
         # Check if the endpoint ID is already in any connection list
         if not any(i in connection_list for connection_list in all_connections):
             # Find connected endpoints for the current ID
-            connected_endpoints = find_connected_endpoints(
-                thinned, endpoints, i)
+            connected_endpoints = find_connected_endpoints(thinned, endpoints, i)
             # Append the list of connected endpoints to all_connections
             all_connections.append(connected_endpoints)
 

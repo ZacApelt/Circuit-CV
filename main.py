@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 ## Configuration
 # Load the image
-image_path = "./circuits/cir9.png"  
+image_path = "./circuits/crom.png"  
 
 # Load the YOLOv8 model
 model = YOLO('runs/detect/train2/weights/best.pt')

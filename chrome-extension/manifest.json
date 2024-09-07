@@ -1,7 +1,7 @@
 {
-  "description": "A browser extension that takes screenshots",
+  "description": "A browser extension simulates circuits from screenshots",
   "version": "1.0.0",
-  "name": "Screenshot Extension (Open Source)",
+  "name": "Circuit Vision",
   "background": { "page": "background.html" },
   "browser_action": { "default_icon": "icon-34.png" },
   "options_ui": { "page": "options.html", "open_in_tab": false },
